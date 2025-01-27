@@ -1,0 +1,290 @@
+---
+title: "Aquaculture in Vietnam"
+author: "Minh Chau"
+date: "2025-01-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# library(readr)
+# library(readxl)
+# library(ggplot2)
+library(stringi)
+library(tidyverse)
+library(tibble)
+library(readxl)
+library(ggrepel)
+```
+
+
+```{r dataset 01}
+#this is a data base about value of aquatic products per hectare. time from 2016 to 2022.
+#link for this data: https://www.gso.gov.vn/px-web-2/?pxid=V0603&theme=N%C3%B4ng%2C%20l%C3%A2m%20nghi%E1%BB%87p%20v%C3%A0%20th%E1%BB%A7y%20s%E1%BA%A3n
+# Read the Excel file
+data_01 <- read_excel("C:/Users/ngoti/Desktop/Economic in Aquaculture/file_01.xlsx")
+
+# Subset the data: Select rows where the second column (year) is >= 2016 and choose relevant columns
+data_01_c <- data_01 %>%
+  filter(...2 >= 2016) %>%
+  select(...2, ...3)
+
+# Rename columns for clarity
+colnames(data_01_c) <- c("year", "Value_of_aquatic_products_per_hectare")
+
+# Convert the value column to numeric
+data_01_c$Value_of_aquatic_products_per_hectare <- as.numeric(data_01_c$Value_of_aquatic_products_per_hectare)
+
+# --- Create Bar Plot ---
+ggplot(data_01_c, aes(x = year, y = Value_of_aquatic_products_per_hectare, fill = Value_of_aquatic_products_per_hectare)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Change in Time",
+    x = "Year",
+    y = "Value of Aquatic Products per Hectare"
+  ) +
+  theme_minimal()
+
+# --- Create Line Plot ---
+ggplot(data_01_c, aes(x = year, y = Value_of_aquatic_products_per_hectare, group = 1)) +
+  geom_point(size = 3, color = "red") +
+  geom_line(linewidth = 1, color = "blue") +
+  geom_text(aes(label = Value_of_aquatic_products_per_hectare), vjust = -1, color = "black") +  # Add labels
+  labs(
+    title = "Change in Time",
+    x = "Year",
+    y = "Value of Aquatic Products per Hectare"
+  ) +
+  theme_minimal()
+
+# --- Compare Each Year with Previous Year (2016 as 100%) ---
+data_01_c <- data_01_c %>%
+  mutate(increase_lvl = ifelse(row_number() == 1, 1, Value_of_aquatic_products_per_hectare / lag(Value_of_aquatic_products_per_hectare)))
+
+# Convert increase level to formatted numeric values
+data_01_c$increase_lvl <- round(as.numeric(data_01_c$increase_lvl), 3)
+
+# Print updated dataset
+print(data_01_c)
+
+# --- Create Line Plot for Increase Level ---
+ggplot(data_01_c, aes(x = year, y = increase_lvl, group = 1)) +
+  geom_point(size = 3, color = "red") +
+  geom_line(linewidth = 1, color = "blue") +
+  geom_text(aes(label = increase_lvl), vjust = -1, color = "black") +  # Add labels
+  labs(
+    title = "Change in Time",
+    x = "Year",
+    y = "Increase Level"
+  ) +
+  theme_minimal()
+```
+
+
+
+#Summary chunk 1
+Nam nao gia tri tren 1 hecta dat nuoi trong thu hoach thuy san deu tang. Cong thuc tinh la tu san luong tinh ra tien roi chia cho dien tich. Vay thi no se phu thuoc vao 2 yeu to do la san luong thu duoc va dien tich. 
+
+Cau hoi dat ra: Voi gia tri deu tang nhu vay thi san luon va dien tich thay doi nhu the nao?
+
+
+```{r Culturing area}
+# insert data from this link: https://www.gso.gov.vn/px-web-2/?pxid=V0656&theme=N%C3%B4ng%2C%20l%C3%A2m%20nghi%E1%BB%87p%20v%C3%A0%20th%E1%BB%A7y%20s%E1%BA%A3n
+
+#from 2022, the survey is count on the area that harvest 
+
+# Read the Excel file
+data_02 <- read_excel("C:/Users/ngoti/Desktop/Economic in Aquaculture/file_02.xlsx")
+
+# Select the relevant rows and columns
+data_02_c <- data_02[2:12, 1:8]
+
+# Rename the first cell to "Year"
+data_02_c[1, 1] <- "Year"
+
+# Set column names
+colnames(data_02_c) <- c("type", 2016:2022)
+
+# Convert text to ASCII format for consistency
+data_02_c$type <- stri_trans_general(data_02_c$type, "Latin-ASCII")
+
+# Rename "Year" to avoid conflicts
+data_02_c <- data_02_c %>%
+  mutate(type = ifelse(type == "Year", "Year_Column", type))
+
+# Convert 'type' column into row names, then transpose the data
+data_02_c <- data_02_c %>%
+  column_to_rownames(var = "type") %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "Year")
+
+# Remove "Year" column
+data_02_c <- select(data_02_c, -Year)
+colnames(data_02_c)[3]<- "Thuy san bien"
+
+# Print final cleaned dataset
+print(data_02_c)
+
+#creat a bar plot for TONG SO
+ggplot(data_02_c,aes(x=Year_Column,y = `TONG SO`,fill = `TONG SO`)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Dien tich thay doi theo thoi gian",
+  x ="year",
+  y = "TONG SO DIEN TICH") +
+  theme_minimal()
+
+#creat a bar plot for Thuy san bien
+ggplot(data_02_c,aes(x=Year_Column,y = `Thuy san bien`,fill = `Thuy san bien`)) +
+  geom_bar(stat = "identity") +
+  labs(title = "TONG DIEN TICH THU HOACH THUY SAN BIEN TU 2016 DEN 2022",
+  x ="year",
+  y = "TONG SO DIEN TICH THU HOACH THUY SAN BIEN") +
+  theme_minimal()
+
+#creat a bar plot for Thuy san noi dia
+ggplot(data_02_c,aes(x=Year_Column,y = `Thuy san noi dia`,fill = `Thuy san noi dia`)) +
+  geom_bar(stat = "identity") +
+  labs(title = "TONG DIEN TICH THU HOACH THUY SAN NOI DIA TU 2016 DEN 2022",
+  x ="year",
+  y = "TONG SO DIEN TICH THU HOACH THUY SAN NOI DIA") +
+  theme_minimal()
+
+#Creat increase level for Tong so
+data_02_c$`TONG SO` <- as.numeric(data_02_c$`TONG SO`)
+data_02_c <- data_02_c %>%
+  mutate(increase_lvl = ifelse(row_number() == 1, 1, `TONG SO` / lag(`TONG SO`)))
+
+# Convert increase level to formatted numeric values
+data_02_c$increase_lvl <- round(as.numeric(data_02_c$increase_lvl), 3)
+
+#Creat line plot for increae level in Tong so
+ggplot(data_02_c, aes(x = Year_Column, y = increase_lvl, group = 1)) +
+  geom_point(size = 3, color = "red") +
+  geom_line(linewidth = 1, color = "blue") +
+  geom_text(aes(label = increase_lvl), vjust = -1, color = "black") +  # Add labels
+  labs(
+    title = "Area Change in Time",
+    x = "Year",
+    y = "Increase Level"
+  ) +
+  theme_minimal()
+
+#creat a data frame for piechart. bring wide to long
+data_02_c1 <- data_02_c %>% select(1,3,7,11)
+data_02_c1 <- data_02_c1 %>% 
+  pivot_longer(
+    cols = c(`Thuy san bien`,`Thuy san noi dia`,`Dien tich uom, nuoi giong thuy san`),
+    names_to = "categories",
+    values_to = "Value"
+  )
+data_02_c1 <- data_02_c1 %>%
+  mutate(Value = ifelse(Value =="..", 0, Value)) %>%
+  mutate(as.numeric(Value))
+
+#Cal percentage
+data_02_c1 <- data_02_c1 %>%
+  group_by(Year_Column) %>%
+  mutate(
+    Value = as.numeric(Value),
+    percentage = Value / sum(Value) * 100
+  )
+#creat a pie plot to show the percentage of category
+ggplot(data_02_c1, aes(x = "", y = percentage, fill = categories)) +
+  geom_bar(stat = "identity", width = 1) +               # Create pie chart
+  coord_polar(theta = "y") +                             # Convert to polar coordinates
+  geom_label_repel(
+    aes(label = paste0(round(percentage, 1), "%")),      # Add percentage labels
+    position = position_stack(vjust = 0.5),             # Stack labels vertically
+    box.padding = 0.5,                                  # Padding around the text box
+    point.padding = 0.5,                                # Padding around the arrow point
+    segment.color = "gray",                             # Arrow color
+    segment.size = 0.7                                  # Arrow thickness
+  ) +
+  facet_wrap(~ Year_Column, ncol = 4) +                 # Create facets for each year
+  labs(title = "Pie Charts for Each Year (2016-2022)", x = NULL, y = NULL) +
+  theme_void() +                                        # Minimal theme
+  theme(legend.position = "bottom")                    # Move legend to the bottom
+
+
+```
+
+
+
+
+
+#Summary chunk 2
+Co the thay rang dien tich khong tang deu ma co su thay doi theo thoi gian, hien tai co giai doan tu 2019 toi 2021 dien tich giam.
+Note: Dien tich giam, ma nam nao gia tri cung tang, nhung ma muc tang khong co dot bien. Vay nen co the du doan rang san luong cung co giam, nhung ma khi tinh ra gia tri/ dien tich thi no van lon hon so voi cac nam truoc.
+Vay rang can kiem tra them ca san luong thu hoach tu nam 2016 va nam 2022.
+
+
+```{r Detail in Area}
+# Insert data from this link: https://www.gso.gov.vn/px-web-2/?pxid=V0657&theme=N%C3%B4ng%2C%20l%C3%A2m%20nghi%E1%BB%87p%20v%C3%A0%20th%E1%BB%A7y%20s%E1%BA%A3n
+
+# Read the excel file
+data_03 <- read_excel("C:/Users/ngoti/Desktop/Economic in Aquaculture/file_03.xlsx")
+print(data_03)
+
+#Clean data
+data_03_c <- data_03[3:73,1:8]
+colnames(data_03_c) <- c("area",2016:2022)
+
+# Convert text to ASCII format for consistency
+data_03_c$area <- stri_trans_general(data_03_c$area, "Latin-ASCII")
+
+library(tibble)
+
+# Define year range and ranges for each region
+years <- 2016:2022
+ranges <- list(
+  DBSH = 3:14,
+  TD_MNPB = 16:29,
+  BTB_DHMT = 31:44,
+  TN = 46:50,
+  DNB = 52:57,
+  DBSCL = 59:71
+)
+
+# Loop through each year and create a tibble dynamically
+for (year in years) {
+  # Get the column for the specific year
+  year_data <- data_03_c[[as.character(year)]]
+  
+  # Find the maximum column length for padding
+  max_length <- max(sapply(ranges, function(r) length(r)))
+  
+  # Create the tibble for this year
+  tibble_data <- as_tibble(lapply(ranges, function(r) {
+    c(year_data[r], rep(NA, max_length - length(r)))
+  }))
+  
+  # Dynamically assign the tibble to a variable named dt_03_cXX (e.g., dt_03_c16)
+  assign(paste0("dt_03_c", substr(year, 3, 4)), tibble_data)
+}
+
+# Replace ".." with 0 across all columns
+dt_03_c16 <- dt_03_c16 %>%
+  mutate(across(everything(), ~ ifelse(. == "..", 0, .))) %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))
+
+# dt_03_16 to long table
+
+dt_03_c16_l <- dt_03_c16 %>% pivot_longer(
+  cols = c(DBSH,TD_MNPB,BTB_DHMT,TN,DNB,DBSCL),
+  values_to = "Value",
+)
+
+anova_test<-aov( Value ~ name,data = dt_03_c16_l)
+
+```
+
+
+
+
+
+
+
+
